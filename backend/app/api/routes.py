@@ -18,6 +18,7 @@ async def analyze_uploaded_image(
     resize_factor: float = Form(1.0),
     manual_threshold: float = Form(0.5),
     use_watershed_split: bool = Form(True),
+    method: str = Form("CW-MTF (Novel)"),
 ):
     os.makedirs("uploads", exist_ok=True)
 
@@ -32,7 +33,8 @@ async def analyze_uploaded_image(
         image_path=file_path,
         resize_factor=resize_factor,
         manual_threshold=manual_threshold,
-        use_watershed_split=use_watershed_split
+        use_watershed_split=use_watershed_split,
+        method=method,
     )
 
     return result

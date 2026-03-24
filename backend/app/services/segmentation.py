@@ -6,8 +6,16 @@ import matplotlib.pyplot as plt
 
 from skimage import io, color, filters, transform, morphology, segmentation, feature, measure
 from skimage.filters import gaussian
-from skimage.registration import phase_cross_correlation
 from scipy import ndimage as ndi
+
+
+SUPPORTED_METHODS = {
+    "Otsu",
+    "Adaptive",
+    "Manual",
+    "Majority Fusion",
+    "CW-MTF (Novel)",
+}
 
 
 def _kmeans_hsv_cluster(hsv_image, k=3, sample_cap=50000, sat_min=0.35, val_min=0.25):
@@ -52,10 +60,9 @@ def get_color_likelihood_mask(hsv_image):
     c = centers[chosen]
 
     H, S, V = hsv_image[..., 0], hsv_image[..., 1], hsv_image[..., 2]
-    dh = (H - c[0])
-    dh = np.minimum(np.abs(dh), 1.0 - np.abs(dh))
-    ds = (S - c[1])
-    dv = (V - c[2])
+    dh = np.minimum(np.abs(H - c[0]), 1.0 - np.abs(H - c[0]))
+    ds = S - c[1]
+    dv = V - c[2]
 
     sh, ss, sv = 0.06, 0.25, 0.25
     d2 = (dh / sh) ** 2 + (ds / ss) ** 2 + (dv / sv) ** 2
@@ -128,6 +135,41 @@ def cw_mtf_fusion(preprocessed01, manual_t, color_likelihood01):
     return fusion_mask, uncertainty, (wo, wa, wm, wc)
 
 
+def get_binary_mask(preprocessed_image, color_likelihood01, manual_threshold, method):
+    if method == "Otsu":
+        binary_mask = preprocessed_image > filters.threshold_otsu(preprocessed_image)
+        return binary_mask, None, None
+
+    if method == "Adaptive":
+        binary_mask = preprocessed_image > filters.threshold_local(preprocessed_image, block_size=15)
+        return binary_mask, None, None
+
+    if method == "Manual":
+        binary_mask = preprocessed_image > manual_threshold
+        return binary_mask, None, None
+
+    if method == "Majority Fusion":
+        otsu_mask = preprocessed_image > filters.threshold_otsu(preprocessed_image)
+        adaptive_mask = preprocessed_image > filters.threshold_local(preprocessed_image, block_size=15)
+        manual_mask = preprocessed_image > manual_threshold
+
+        fusion = (
+            otsu_mask.astype(np.uint8) +
+            adaptive_mask.astype(np.uint8) +
+            manual_mask.astype(np.uint8)
+        ) >= 2
+
+        fusion = fusion | (color_likelihood01 > 0.6)
+        return fusion, None, None
+
+    fusion_mask, uncertainty_map, weights = cw_mtf_fusion(
+        preprocessed_image,
+        manual_threshold,
+        color_likelihood01
+    )
+    return fusion_mask, uncertainty_map, weights
+
+
 def refine_mask(binary_mask):
     cleaned = morphology.opening(binary_mask, morphology.disk(2))
     cleaned = morphology.closing(cleaned, morphology.disk(3))
@@ -194,7 +236,16 @@ def save_image(path, image, cmap=None):
     plt.close()
 
 
-def analyze_image(image_path, resize_factor=1.0, manual_threshold=0.5, use_watershed_split=True):
+def analyze_image(
+    image_path,
+    resize_factor=1.0,
+    manual_threshold=0.5,
+    use_watershed_split=True,
+    method="CW-MTF (Novel)",
+):
+    if method not in SUPPORTED_METHODS:
+        method = "CW-MTF (Novel)"
+
     image = io.imread(image_path)
     if image.ndim == 2:
         image = color.gray2rgb(image)
@@ -215,10 +266,11 @@ def analyze_image(image_path, resize_factor=1.0, manual_threshold=0.5, use_water
     gray_image = color.rgb2gray(resized_image)
     preprocessed_image = gaussian(gray_image, sigma=1)
 
-    binary_image, uncertainty_map, weights = cw_mtf_fusion(
-        preprocessed_image,
-        manual_threshold,
-        color_likelihood01
+    binary_image, uncertainty_map, weights = get_binary_mask(
+        preprocessed_image=preprocessed_image,
+        color_likelihood01=color_likelihood01,
+        manual_threshold=manual_threshold,
+        method=method,
     )
 
     cleaned_image = refine_mask(binary_image)
@@ -232,7 +284,7 @@ def analyze_image(image_path, resize_factor=1.0, manual_threshold=0.5, use_water
     segmented_image = resized_image.copy()
     segmented_image[~separated_mask] = 0
 
-    areas, metrics = colony_metrics_from_labels(labels)
+    _, metrics = colony_metrics_from_labels(labels)
 
     result_id = str(uuid.uuid4())
     results_dir = "results"
@@ -249,26 +301,31 @@ def analyze_image(image_path, resize_factor=1.0, manual_threshold=0.5, use_water
     if uncertainty_map is not None:
         uncertainty_vis = uncertainty_map * separated_mask.astype(np.float32)
         save_image(uncertainty_path, uncertainty_vis, cmap="gray")
+        uncertainty_result_path = uncertainty_path.replace("\\", "/")
     else:
-        uncertainty_path = None
+        uncertainty_result_path = None
 
     save_image(segmented_path, segmented_image)
 
-    wo, wa, wm, wc = weights
-
-    return {
-        "result_id": result_id,
-        "metrics": metrics,
-        "weights": {
+    weights_response = None
+    if weights is not None:
+        wo, wa, wm, wc = weights
+        weights_response = {
             "otsu": float(wo),
             "adaptive": float(wa),
             "manual": float(wm),
             "color": float(wc)
-        },
+        }
+
+    return {
+        "result_id": result_id,
+        "method": method,
+        "metrics": metrics,
+        "weights": weights_response,
         "images": {
             "resized": resized_path.replace("\\", "/"),
             "mask": mask_path.replace("\\", "/"),
-            "uncertainty": uncertainty_path.replace("\\", "/") if uncertainty_path else None,
+            "uncertainty": uncertainty_result_path,
             "segmented": segmented_path.replace("\\", "/")
         }
     }
