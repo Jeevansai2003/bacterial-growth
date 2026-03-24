@@ -236,16 +236,7 @@ def save_image(path, image, cmap=None):
     plt.close()
 
 
-def analyze_image(
-    image_path,
-    resize_factor=1.0,
-    manual_threshold=0.5,
-    use_watershed_split=True,
-    method="CW-MTF (Novel)",
-):
-    if method not in SUPPORTED_METHODS:
-        method = "CW-MTF (Novel)"
-
+def analyze_image(image_path, resize_factor=1.0, manual_threshold=0.5, use_watershed_split=True):
     image = io.imread(image_path)
     if image.ndim == 2:
         image = color.gray2rgb(image)
@@ -266,11 +257,10 @@ def analyze_image(
     gray_image = color.rgb2gray(resized_image)
     preprocessed_image = gaussian(gray_image, sigma=1)
 
-    binary_image, uncertainty_map, weights = get_binary_mask(
-        preprocessed_image=preprocessed_image,
-        color_likelihood01=color_likelihood01,
-        manual_threshold=manual_threshold,
-        method=method,
+    binary_image, uncertainty_map, weights = cw_mtf_fusion(
+        preprocessed_image,
+        manual_threshold,
+        color_likelihood01
     )
 
     cleaned_image = refine_mask(binary_image)
@@ -284,48 +274,46 @@ def analyze_image(
     segmented_image = resized_image.copy()
     segmented_image[~separated_mask] = 0
 
-    _, metrics = colony_metrics_from_labels(labels)
+    areas, metrics = colony_metrics_from_labels(labels)
 
     result_id = str(uuid.uuid4())
     results_dir = "results"
     os.makedirs(results_dir, exist_ok=True)
 
     resized_path = os.path.join(results_dir, f"{result_id}_resized.png")
-    mask_path = os.path.join(results_dir, f"{result_id}_mask.png")
-    uncertainty_path = os.path.join(results_dir, f"{result_id}_uncertainty.png")
+    grayscale_path = os.path.join(results_dir, f"{result_id}_grayscale.png")
+    preprocessed_path = os.path.join(results_dir, f"{result_id}_preprocessed.png")
+    color_likelihood_path = os.path.join(results_dir, f"{result_id}_color_likelihood.png")
+    binary_path = os.path.join(results_dir, f"{result_id}_binary.png")
+    refined_split_path = os.path.join(results_dir, f"{result_id}_refined_split.png")
     segmented_path = os.path.join(results_dir, f"{result_id}_segmented.png")
 
     save_image(resized_path, resized_image)
-    save_image(mask_path, separated_mask.astype(np.uint8) * 255, cmap="gray")
-
-    if uncertainty_map is not None:
-        uncertainty_vis = uncertainty_map * separated_mask.astype(np.float32)
-        save_image(uncertainty_path, uncertainty_vis, cmap="gray")
-        uncertainty_result_path = uncertainty_path.replace("\\", "/")
-    else:
-        uncertainty_result_path = None
-
+    save_image(grayscale_path, gray_image, cmap="gray")
+    save_image(preprocessed_path, preprocessed_image, cmap="gray")
+    save_image(color_likelihood_path, color_likelihood01, cmap="gray")
+    save_image(binary_path, binary_image.astype(np.uint8) * 255, cmap="gray")
+    save_image(refined_split_path, separated_mask.astype(np.uint8) * 255, cmap="gray")
     save_image(segmented_path, segmented_image)
 
-    weights_response = None
-    if weights is not None:
-        wo, wa, wm, wc = weights
-        weights_response = {
+    wo, wa, wm, wc = weights
+
+    return {
+        "result_id": result_id,
+        "metrics": metrics,
+        "weights": {
             "otsu": float(wo),
             "adaptive": float(wa),
             "manual": float(wm),
             "color": float(wc)
-        }
-
-    return {
-        "result_id": result_id,
-        "method": method,
-        "metrics": metrics,
-        "weights": weights_response,
+        },
         "images": {
             "resized": resized_path.replace("\\", "/"),
-            "mask": mask_path.replace("\\", "/"),
-            "uncertainty": uncertainty_result_path,
+            "grayscale": grayscale_path.replace("\\", "/"),
+            "preprocessed": preprocessed_path.replace("\\", "/"),
+            "color_likelihood": color_likelihood_path.replace("\\", "/"),
+            "binary": binary_path.replace("\\", "/"),
+            "refined_split": refined_split_path.replace("\\", "/"),
             "segmented": segmented_path.replace("\\", "/")
         }
     }

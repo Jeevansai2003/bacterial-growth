@@ -34,7 +34,6 @@ async def analyze_uploaded_image(
         resize_factor=resize_factor,
         manual_threshold=manual_threshold,
         use_watershed_split=use_watershed_split,
-        method=method,
     )
 
     return result

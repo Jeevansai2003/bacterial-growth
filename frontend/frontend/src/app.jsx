@@ -175,36 +175,47 @@ function App() {
           </div>
 
           <div className="image-grid">
-            <div className="image-card">
-              <h4>Resized</h4>
-              <img src={makeImageUrl(result.images?.resized)} alt="Resized" />
-            </div>
+  <div className="image-card">
+    <h4>Resized Image</h4>
+    <img src={makeImageUrl(result.images?.resized)} alt="Resized" />
+  </div>
 
-            <div className="image-card">
-              <h4>Mask</h4>
-              <img src={makeImageUrl(result.images?.mask)} alt="Mask" />
-            </div>
+  <div className="image-card">
+    <h4>Grayscale Image</h4>
+    <img src={makeImageUrl(result.images?.grayscale)} alt="Grayscale" />
+  </div>
 
-            <div className="image-card">
-              <h4>Uncertainty</h4>
-              {showUncertainty ? (
-                <img
-                  src={makeImageUrl(result.images?.uncertainty)}
-                  alt="Uncertainty"
-                />
-              ) : (
-                <p>No uncertainty image for this method.</p>
-              )}
-            </div>
+  <div className="image-card">
+    <h4>Preprocessed (Gaussian)</h4>
+    <img src={makeImageUrl(result.images?.preprocessed)} alt="Preprocessed" />
+  </div>
 
-            <div className="image-card">
-              <h4>Segmented</h4>
-              <img
-                src={makeImageUrl(result.images?.segmented)}
-                alt="Segmented"
-              />
-            </div>
-          </div>
+  <div className="image-card">
+    <h4>Self-Calibrated Color Likelihood</h4>
+    <img
+      src={makeImageUrl(result.images?.color_likelihood)}
+      alt="Color Likelihood"
+    />
+  </div>
+
+  <div className="image-card">
+    <h4>Binary Mask</h4>
+    <img src={makeImageUrl(result.images?.binary)} alt="Binary Mask" />
+  </div>
+
+  <div className="image-card">
+    <h4>Refined + Split Mask (Watershed)</h4>
+    <img
+      src={makeImageUrl(result.images?.refined_split)}
+      alt="Refined Split Mask"
+    />
+  </div>
+
+  <div className="image-card">
+    <h4>Final Segmented Image</h4>
+    <img src={makeImageUrl(result.images?.segmented)} alt="Segmented" />
+  </div>
+</div>
         </div>
       )}
     </div>
