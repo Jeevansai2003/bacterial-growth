@@ -9,13 +9,7 @@ body {
   display: flex;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 220px;
-  background: #020617;
-  height: 100vh;
-  padding: 20px;
-}
+
 
 .sidebar h2 {
   margin-bottom: 30px;

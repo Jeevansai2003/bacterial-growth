@@ -77,14 +77,7 @@ function App() {
   return (
     <div className="dashboard">
 
-      {/* Sidebar */}
-      <div className="sidebar">
-        <h2>🧪 BioLab</h2>
-        <ul>
-          <li className="active">Segmentation</li>
-          <li>Analytics</li>
-        </ul>
-      </div>
+ 
 
       {/* Main */}
       <div className="main">
@@ -188,19 +181,7 @@ function App() {
               </p>
             </div>
 
-            <div className="card">
-              <h3>Fusion Weights</h3>
-              {showWeights ? (
-                <>
-                  <p>Otsu: {result.weights?.otsu}</p>
-                  <p>Adaptive: {result.weights?.adaptive}</p>
-                  <p>Manual: {result.weights?.manual}</p>
-                  <p>Color: {result.weights?.color}</p>
-                </>
-              ) : (
-                <p>Only available for CW-MTF</p>
-              )}
-            </div>
+          
 
             {/* Images */}
             <div className="image-grid">
