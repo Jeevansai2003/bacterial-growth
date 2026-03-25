@@ -73,151 +73,158 @@ function App() {
   };
 
   const showWeights = result?.weights;
-  const showUncertainty = result?.images?.uncertainty;
 
   return (
-    <div className="app-container">
-      <h1>Bacterial Growth Segmentation</h1>
+    <div className="dashboard">
 
-      <form className="upload-form" onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Select Image</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-        </div>
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2>🧪 BioLab</h2>
+        <ul>
+          <li className="active">Segmentation</li>
+          <li>Analytics</li>
+        </ul>
+      </div>
 
-        <div className="form-group">
-          <label>Resize Factor</label>
-          <input
-            type="number"
-            step="0.1"
-            min="0.1"
-            value={resizeFactor}
-            onChange={(e) => setResizeFactor(e.target.value)}
-          />
-        </div>
+      {/* Main */}
+      <div className="main">
+        <h1>Bacterial Growth Analysis</h1>
 
-        <div className="form-group">
-          <label>Segmentation Method</label>
-          <select value={method} onChange={(e) => setMethod(e.target.value)}>
-            {segmentationMethods.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Top Section */}
+        <form className="top-section" onSubmit={handleSubmit}>
 
-        <div className="form-group">
-          <label>Manual Threshold</label>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            max="1"
-            value={manualThreshold}
-            onChange={(e) => setManualThreshold(e.target.value)}
-            disabled={method !== "Manual" && method !== "Majority Fusion" && method !== "CW-MTF (Novel)"}
-          />
-        </div>
+         <div className="card">
+  <h3>Upload Image</h3>
 
-        <div className="form-group checkbox-group">
-          <label>
-            <input
-              type="checkbox"
-              checked={useWatershedSplit}
-              onChange={(e) => setUseWatershedSplit(e.target.checked)}
-            />
-            Use Watershed Split
-          </label>
-        </div>
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Processing..." : "Analyze Image"}
-        </button>
-      </form>
-
-      {error && <p className="error-text">{error}</p>}
-
-      {result && (
-        <div className="result-section">
-          <h2>Analysis Result</h2>
-
-          <div className="metrics-card">
-            <h3>Selected Method</h3>
-            <p><strong>Method:</strong> {result.method || method}</p>
-          </div>
-
-          <div className="metrics-card">
-            <h3>Metrics</h3>
-            <p><strong>Count:</strong> {result.metrics?.count ?? "N/A"}</p>
-            <p><strong>Total Area:</strong> {result.metrics?.total_area_px ?? "N/A"}</p>
-            <p><strong>Mean Area:</strong> {result.metrics?.mean_area_px ?? "N/A"}</p>
-            <p><strong>Median Area:</strong> {result.metrics?.median_area_px ?? "N/A"}</p>
-            <p><strong>Mean Circularity:</strong> {result.metrics?.mean_circularity ?? "N/A"}</p>
-            <p>
-              <strong>Mean Equivalent Diameter:</strong>{" "}
-              {result.metrics?.mean_equiv_diameter_px ?? "N/A"}
-            </p>
-          </div>
-
-          <div className="metrics-card">
-            <h3>Fusion Weights</h3>
-            {showWeights ? (
-              <>
-                <p><strong>Otsu:</strong> {result.weights?.otsu}</p>
-                <p><strong>Adaptive:</strong> {result.weights?.adaptive}</p>
-                <p><strong>Manual:</strong> {result.weights?.manual}</p>
-                <p><strong>Color:</strong> {result.weights?.color}</p>
-              </>
-            ) : (
-              <p>Fusion weights are available only for CW-MTF (Novel).</p>
-            )}
-          </div>
-
-          <div className="image-grid">
-  <div className="image-card">
-    <h4>Resized Image</h4>
-    <img src={makeImageUrl(result.images?.resized)} alt="Resized" />
-  </div>
-
-  <div className="image-card">
-    <h4>Grayscale Image</h4>
-    <img src={makeImageUrl(result.images?.grayscale)} alt="Grayscale" />
-  </div>
-
-  <div className="image-card">
-    <h4>Preprocessed (Gaussian)</h4>
-    <img src={makeImageUrl(result.images?.preprocessed)} alt="Preprocessed" />
-  </div>
-
-  <div className="image-card">
-    <h4>Self-Calibrated Color Likelihood</h4>
-    <img
-      src={makeImageUrl(result.images?.color_likelihood)}
-      alt="Color Likelihood"
+  <label className="upload-box">
+    <input
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      hidden
     />
-  </div>
+    <span>📁 Upload Image</span>
+  </label>
 
-  <div className="image-card">
-    <h4>Binary Mask</h4>
-    <img src={makeImageUrl(result.images?.binary)} alt="Binary Mask" />
-  </div>
-
-  <div className="image-card">
-    <h4>Refined + Split Mask (Watershed)</h4>
-    <img
-      src={makeImageUrl(result.images?.refined_split)}
-      alt="Refined Split Mask"
-    />
-  </div>
-
-  <div className="image-card">
-    <h4>Final Segmented Image</h4>
-    <img src={makeImageUrl(result.images?.segmented)} alt="Segmented" />
-  </div>
+  {file && (
+    <p className="file-name">✅ {file.name}</p>
+  )}
 </div>
-        </div>
-      )}
+
+          {/* Controls Card */}
+          <div className="card">
+            <h3>Controls</h3>
+
+            <label>Resize Factor</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              value={resizeFactor}
+              onChange={(e) => setResizeFactor(e.target.value)}
+            />
+
+            <label>Segmentation Method</label>
+            <select value={method} onChange={(e) => setMethod(e.target.value)}>
+              {segmentationMethods.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+
+            <label>Manual Threshold</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="1"
+              value={manualThreshold}
+              onChange={(e) => setManualThreshold(e.target.value)}
+              disabled={
+                method !== "Manual" &&
+                method !== "Majority Fusion" &&
+                method !== "CW-MTF (Novel)"
+              }
+            />
+
+            <div className="checkbox">
+              <input
+                type="checkbox"
+                checked={useWatershedSplit}
+                onChange={(e) => setUseWatershedSplit(e.target.checked)}
+              />
+              <span>Watershed Split</span>
+            </div>
+
+            <button type="submit" disabled={loading}>
+              {loading ? "Processing..." : "🚀 Analyze Image"}
+            </button>
+          </div>
+        </form>
+
+        {/* Error */}
+        {error && <p className="error-text">{error}</p>}
+
+        {/* Results */}
+        {result && (
+          <div className="results">
+
+            <div className="card">
+              <h3>Selected Method</h3>
+              <p>{result.method || method}</p>
+            </div>
+
+            <div className="card">
+              <h3>Metrics</h3>
+              <p>Count: {result.metrics?.count ?? "N/A"}</p>
+              <p>Total Area: {result.metrics?.total_area_px ?? "N/A"}</p>
+              <p>Mean Area: {result.metrics?.mean_area_px ?? "N/A"}</p>
+              <p>Median Area: {result.metrics?.median_area_px ?? "N/A"}</p>
+              <p>Mean Circularity: {result.metrics?.mean_circularity ?? "N/A"}</p>
+              <p>
+                Mean Equivalent Diameter:{" "}
+                {result.metrics?.mean_equiv_diameter_px ?? "N/A"}
+              </p>
+            </div>
+
+            <div className="card">
+              <h3>Fusion Weights</h3>
+              {showWeights ? (
+                <>
+                  <p>Otsu: {result.weights?.otsu}</p>
+                  <p>Adaptive: {result.weights?.adaptive}</p>
+                  <p>Manual: {result.weights?.manual}</p>
+                  <p>Color: {result.weights?.color}</p>
+                </>
+              ) : (
+                <p>Only available for CW-MTF</p>
+              )}
+            </div>
+
+            {/* Images */}
+            <div className="image-grid">
+              {[
+                ["Resized", result.images?.resized],
+                ["Grayscale", result.images?.grayscale],
+                ["Preprocessed", result.images?.preprocessed],
+                ["Color Likelihood", result.images?.color_likelihood],
+                ["Binary Mask", result.images?.binary],
+                ["Refined + Split", result.images?.refined_split],
+                ["Segmented", result.images?.segmented],
+              ].map(([title, path]) =>
+                path ? (
+                  <div className="image-card" key={title}>
+                    <h4>{title}</h4>
+                    <img src={makeImageUrl(path)} alt={title} />
+                  </div>
+                ) : null
+              )}
+            </div>
+
+          </div>
+        )}
+      </div>
     </div>
   );
 }
