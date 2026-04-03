@@ -113,9 +113,13 @@ function App() {
               type="number"
               step="0.1"
               min="0.1"
+              max="4"
               value={resizeFactor}
               onChange={(e) => setResizeFactor(e.target.value)}
             />
+              <p className="input-hint">
+              Enter any value (0 to 4).
+            </p>
 
             <label>Segmentation Method</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)}>
